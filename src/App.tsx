@@ -1,12 +1,56 @@
 "use client";
 
 import type React from "react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, createContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import styled, { createGlobalStyle, keyframes } from "styled-components";
+import styled, {
+  createGlobalStyle,
+  keyframes,
+  ThemeProvider,
+} from "styled-components";
+
+// Theme Context
+const ThemeContext = createContext<{
+  isDark: boolean;
+  toggleTheme: () => void;
+}>({
+  isDark: true,
+  toggleTheme: () => {},
+});
+
+// Theme definitions
+const darkTheme = {
+  background: "linear-gradient(to bottom right, #111827, #1f2937, #111827)",
+  cardBackground: "rgba(31, 41, 55, 0.5)",
+  cardBorder: "rgba(55, 65, 81, 0.5)",
+  cardHoverBorder: "rgba(139, 92, 246, 0.5)",
+  text: "#ffffff",
+  textSecondary: "#d1d5db",
+  textMuted: "#9ca3af",
+  navBackground: "rgba(17, 24, 39, 0.8)",
+  navBackgroundTransparent: "transparent",
+  skillBarBackground: "rgba(55, 65, 81, 0.5)",
+  footerBackground: "rgba(17, 24, 39, 0.8)",
+  footerBorder: "rgba(55, 65, 81, 0.5)",
+};
+
+const lightTheme = {
+  background: "linear-gradient(to bottom right, #fef3c7, #dddd, #dddd)",
+  cardBackground: "rgba(255, 255, 255, 0.8)",
+  cardBorder: "rgba(229, 231, 235, 0.8)",
+  cardHoverBorder: "#dddd",
+  text: "#111827",
+  textSecondary: "#374151",
+  textMuted: "#6b7280",
+  navBackground: "rgba(255, 255, 255, 0.9)",
+  navBackgroundTransparent: "transparent",
+  skillBarBackground: "rgba(229, 231, 235, 0.8)",
+  footerBackground: "rgba(255, 255, 255, 0.9)",
+  footerBorder: "rgba(229, 231, 235, 0.8)",
+};
 
 // Global Styles
-const GlobalStyle = createGlobalStyle`
+const GlobalStyle = createGlobalStyle<{ theme: any }>`
   * {
     margin: 0;
     padding: 0;
@@ -19,9 +63,10 @@ const GlobalStyle = createGlobalStyle`
   }
 
   body {
-    background: linear-gradient(to bottom right, #111827, #1f2937, #111827);
-    color: #ffffff;
+    background: ${(props) => props.theme.background};
+    color: ${(props) => props.theme.text};
     overflow-x: hidden;
+    transition: all 0.3s ease;
   }
 
   a {
@@ -67,7 +112,9 @@ const NavbarContainer = styled.nav<{ isScrolled: boolean }>`
   z-index: 100;
   transition: all 0.3s ease;
   background: ${(props) =>
-    props.isScrolled ? "rgba(17, 24, 39, 0.8)" : "transparent"};
+    props.isScrolled
+      ? props.theme.navBackground
+      : props.theme.navBackgroundTransparent};
   backdrop-filter: ${(props) => (props.isScrolled ? "blur(8px)" : "none")};
   box-shadow: ${(props) =>
     props.isScrolled ? "0 4px 6px -1px rgba(0, 0, 0, 0.1)" : "none"};
@@ -108,22 +155,40 @@ const NavLinks = styled.div`
 `;
 
 const NavCapsule = styled.div`
-  background: rgba(31, 41, 55, 0.5);
+  background: ${(props) => props.theme.cardBackground};
   border-radius: 9999px;
   padding: 0.25rem;
   display: flex;
   gap: 0.25rem;
+  border: 1px solid ${(props) => props.theme.cardBorder};
 `;
 
 const NavLink = styled.button`
   padding: 0.5rem 1rem;
   border-radius: 9999px;
   font-size: 0.875rem;
-  color: #ffffff;
+  color: ${(props) => props.theme.text};
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(55, 65, 81, 0.5);
+    background: ${(props) => props.theme.cardBackground};
+  }
+`;
+
+const ThemeToggle = styled.button`
+  padding: 0.5rem;
+  border-radius: 9999px;
+  background: ${(props) => props.theme.cardBackground};
+  border: 1px solid ${(props) => props.theme.cardBorder};
+  color: ${(props) => props.theme.text};
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1rem;
+
+  &:hover {
+    background: ${(props) => props.theme.cardHoverBorder};
   }
 `;
 
@@ -131,7 +196,6 @@ const SocialLinks = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-left: 1rem;
 `;
 
 const SocialLink = styled.a`
@@ -141,9 +205,10 @@ const SocialLink = styled.a`
   display: flex;
   align-items: center;
   justify-content: center;
+  color: ${(props) => props.theme.text};
 
   &:hover {
-    background: rgba(55, 65, 81, 0.5);
+    background: ${(props) => props.theme.cardBackground};
   }
 `;
 
@@ -152,9 +217,10 @@ const MobileMenuButton = styled.button`
   padding: 0.5rem;
   border-radius: 0.5rem;
   transition: all 0.2s ease;
+  color: ${(props) => props.theme.text};
 
   &:hover {
-    background: rgba(55, 65, 81, 0.5);
+    background: ${(props) => props.theme.cardBackground};
   }
 
   @media (max-width: 768px) {
@@ -169,13 +235,14 @@ const MobileMenu = styled(motion.div)`
   top: 4rem;
   left: 0;
   right: 0;
-  background: rgba(31, 41, 55, 0.95);
+  background: ${(props) => props.theme.navBackground};
   backdrop-filter: blur(8px);
   z-index: 99;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  border-bottom: 1px solid ${(props) => props.theme.cardBorder};
 `;
 
 const MobileNavLink = styled.button`
@@ -184,9 +251,10 @@ const MobileNavLink = styled.button`
   font-size: 1rem;
   text-align: left;
   transition: all 0.2s ease;
+  color: ${(props) => props.theme.text};
 
   &:hover {
-    background: rgba(55, 65, 81, 0.5);
+    background: ${(props) => props.theme.cardBackground};
   }
 `;
 
@@ -261,7 +329,7 @@ const HeroContent = styled.div`
 const HeroSubtitle = styled.h2`
   font-size: 1.25rem;
   font-weight: 400;
-  color: #d1d5db;
+  color: ${(props) => props.theme.textSecondary};
   margin-bottom: 1rem;
 
   @media (max-width: 768px) {
@@ -300,7 +368,7 @@ const TypewriterContainer = styled.div`
 `;
 
 const TypewriterText = styled.span`
-  color: #d1d5db;
+  color: ${(props) => props.theme.textSecondary};
 `;
 
 const TypewriterHighlight = styled.span`
@@ -338,55 +406,19 @@ const ScrollIndicator = styled(motion.div)`
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  color: #d1d5db;
+  color: ${(props) => props.theme.textSecondary};
 `;
 
 const AboutSection = styled(Section)`
-  background: rgba(17, 24, 39, 0.5);
+  background: ${(props) => props.theme.cardBackground};
 `;
 
 const AboutGrid = styled.div`
-  // display: grid;
-  // grid-template-columns: 1fr 1fr;
   gap: 2.5rem;
   align-items: center;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
-  }
-`;
-
-const AboutImageContainer = styled.div`
-  position: relative;
-  width: 100%;
-  height: 24rem;
-  background: linear-gradient(
-    135deg,
-    rgba(139, 92, 246, 0.2),
-    rgba(236, 72, 153, 0.2)
-  );
-  border-radius: 1rem;
-  overflow: hidden;
-
-  @media (max-width: 768px) {
-    height: 20rem;
-  }
-`;
-
-const AboutImage = styled.div`
-  position: absolute;
-  inset: 0.5rem;
-  background: #1f2937;
-  border-radius: 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
   }
 `;
 
@@ -396,11 +428,11 @@ const AboutHeading = styled.h3`
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 1rem;
-  color: #f9fafb;
+  color: ${(props) => props.theme.text};
 `;
 
 const AboutText = styled.p`
-  color: #d1d5db;
+  color: ${(props) => props.theme.textSecondary};
   margin-bottom: 1.5rem;
   line-height: 1.6;
 `;
@@ -415,13 +447,13 @@ const AboutInfoGrid = styled.div`
 const AboutInfoItem = styled.div``;
 
 const AboutInfoLabel = styled.p`
-  color: #9ca3af;
+  color: ${(props) => props.theme.textMuted};
   margin-bottom: 0.25rem;
   font-size: 0.875rem;
 `;
 
 const AboutInfoValue = styled.p`
-  color: #f9fafb;
+  color: ${(props) => props.theme.text};
   font-weight: 500;
 `;
 
@@ -438,14 +470,14 @@ const SkillsGrid = styled.div`
 `;
 
 const SkillCard = styled(motion.div)`
-  background: rgba(31, 41, 55, 0.5);
+  background: ${(props) => props.theme.cardBackground};
   border-radius: 0.75rem;
   padding: 1.5rem;
-  border: 1px solid rgba(55, 65, 81, 0.5);
+  border: 1px solid ${(props) => props.theme.cardBorder};
   transition: all 0.3s ease;
 
   &:hover {
-    border-color: rgba(139, 92, 246, 0.5);
+    border-color: ${(props) => props.theme.cardHoverBorder};
     box-shadow: 0 0 15px rgba(139, 92, 246, 0.1);
   }
 `;
@@ -460,7 +492,7 @@ const SkillHeader = styled.div`
 const SkillName = styled.h3`
   font-size: 1.125rem;
   font-weight: 500;
-  color: #f9fafb;
+  color: ${(props) => props.theme.text};
 `;
 
 const SkillLevel = styled.span`
@@ -472,7 +504,7 @@ const SkillLevel = styled.span`
 const SkillBar = styled.div`
   width: 100%;
   height: 0.5rem;
-  background: rgba(55, 65, 81, 0.5);
+  background: ${(props) => props.theme.skillBarBackground};
   border-radius: 9999px;
   overflow: hidden;
 `;
@@ -484,7 +516,7 @@ const SkillProgress = styled(motion.div)`
 `;
 
 const ExperienceSection = styled(Section)`
-  background: rgba(17, 24, 39, 0.5);
+  background: ${(props) => props.theme.cardBackground};
 `;
 
 const Timeline = styled.div`
@@ -541,14 +573,14 @@ const TimelineDot = styled.div`
 
 const TimelineContent = styled.div<{ isEven: boolean }>`
   width: calc(50% - 2rem);
-  background: rgba(31, 41, 55, 0.5);
+  background: ${(props) => props.theme.cardBackground};
   border-radius: 0.75rem;
   padding: 1.5rem;
-  border: 1px solid rgba(55, 65, 81, 0.5);
+  border: 1px solid ${(props) => props.theme.cardBorder};
   transition: all 0.3s ease;
 
   &:hover {
-    border-color: rgba(139, 92, 246, 0.5);
+    border-color: ${(props) => props.theme.cardHoverBorder};
     box-shadow: 0 0 15px rgba(139, 92, 246, 0.1);
   }
 
@@ -560,7 +592,7 @@ const TimelineContent = styled.div<{ isEven: boolean }>`
 const TimelineTitle = styled.h3`
   font-size: 1.25rem;
   font-weight: 600;
-  color: #f9fafb;
+  color: ${(props) => props.theme.text};
   margin-bottom: 0.5rem;
 `;
 
@@ -576,7 +608,7 @@ const TimelineMeta = styled.div`
   gap: 1rem;
   margin-bottom: 1rem;
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: ${(props) => props.theme.textMuted};
 `;
 
 const TimelineMetaItem = styled.div`
@@ -586,7 +618,7 @@ const TimelineMetaItem = styled.div`
 `;
 
 const TimelineDescription = styled.p`
-  color: #d1d5db;
+  color: ${(props) => props.theme.textSecondary};
   line-height: 1.6;
 `;
 
@@ -603,14 +635,14 @@ const ProjectsGrid = styled.div`
 `;
 
 const ProjectCard = styled(motion.div)`
-  background: rgba(31, 41, 55, 0.5);
+  background: ${(props) => props.theme.cardBackground};
   border-radius: 0.75rem;
   overflow: hidden;
-  border: 1px solid rgba(55, 65, 81, 0.5);
+  border: 1px solid ${(props) => props.theme.cardBorder};
   transition: all 0.3s ease;
 
   &:hover {
-    border-color: rgba(139, 92, 246, 0.5);
+    border-color: ${(props) => props.theme.cardHoverBorder};
     box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
     transform: translateY(-4px);
   }
@@ -664,6 +696,7 @@ const ProjectLink = styled.a`
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  color: white;
 
   &:hover {
     background: rgba(139, 92, 246, 0.8);
@@ -677,12 +710,12 @@ const ProjectContent = styled.div`
 const ProjectTitle = styled.h3`
   font-size: 1.25rem;
   font-weight: 600;
-  color: #f9fafb;
+  color: ${(props) => props.theme.text};
   margin-bottom: 0.75rem;
 `;
 
 const ProjectDescription = styled.p`
-  color: #d1d5db;
+  color: ${(props) => props.theme.textSecondary};
   margin-bottom: 1rem;
   line-height: 1.6;
 `;
@@ -697,12 +730,12 @@ const ProjectTag = styled.span`
   font-size: 0.75rem;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
-  background: rgba(55, 65, 81, 0.5);
-  color: #d1d5db;
+  background: ${(props) => props.theme.skillBarBackground};
+  color: ${(props) => props.theme.textSecondary};
 `;
 
 const EducationSection = styled(Section)`
-  background: rgba(17, 24, 39, 0.5);
+  background: ${(props) => props.theme.cardBackground};
 `;
 
 const EducationTimeline = styled.div`
@@ -749,14 +782,14 @@ const EducationItem = styled(motion.div)`
 `;
 
 const EducationContent = styled.div`
-  background: rgba(31, 41, 55, 0.5);
+  background: ${(props) => props.theme.cardBackground};
   border-radius: 0.75rem;
   padding: 1.5rem;
-  border: 1px solid rgba(55, 65, 81, 0.5);
+  border: 1px solid ${(props) => props.theme.cardBorder};
   transition: all 0.3s ease;
 
   &:hover {
-    border-color: rgba(139, 92, 246, 0.5);
+    border-color: ${(props) => props.theme.cardHoverBorder};
     box-shadow: 0 0 15px rgba(139, 92, 246, 0.1);
   }
 `;
@@ -764,7 +797,7 @@ const EducationContent = styled.div`
 const EducationDegree = styled.h3`
   font-size: 1.25rem;
   font-weight: 600;
-  color: #f9fafb;
+  color: ${(props) => props.theme.text};
   margin-bottom: 0.5rem;
 `;
 
@@ -780,7 +813,7 @@ const EducationMeta = styled.div`
   gap: 1rem;
   margin-bottom: 1rem;
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: ${(props) => props.theme.textMuted};
 `;
 
 const EducationMetaItem = styled.div`
@@ -789,14 +822,9 @@ const EducationMetaItem = styled.div`
   gap: 0.25rem;
 `;
 
-const EducationDescription = styled.p`
-  color: #d1d5db;
-  line-height: 1.6;
-`;
-
 const Footer = styled.footer`
-  background: rgba(17, 24, 39, 0.8);
-  border-top: 1px solid rgba(55, 65, 81, 0.5);
+  background: ${(props) => props.theme.footerBackground};
+  border-top: 1px solid ${(props) => props.theme.footerBorder};
   padding: 2.5rem 2rem;
 
   @media (max-width: 768px) {
@@ -832,7 +860,7 @@ const FooterLogo = styled.h3`
 `;
 
 const FooterText = styled.p`
-  color: #9ca3af;
+  color: ${(props) => props.theme.textMuted};
   margin-bottom: 1rem;
   max-width: 20rem;
   line-height: 1.6;
@@ -846,7 +874,7 @@ const FooterSocialLinks = styled.div`
 const FooterTitle = styled.h4`
   font-size: 1.125rem;
   font-weight: 600;
-  color: #f9fafb;
+  color: ${(props) => props.theme.text};
   margin-bottom: 1rem;
 `;
 
@@ -858,7 +886,7 @@ const FooterLinks = styled.ul`
 
 const FooterLink = styled.li`
   a {
-    color: #9ca3af;
+    color: ${(props) => props.theme.textMuted};
     transition: color 0.2s ease;
 
     &:hover {
@@ -872,7 +900,7 @@ const FooterContactItem = styled.div`
   align-items: flex-start;
   gap: 0.75rem;
   margin-bottom: 1rem;
-  color: #9ca3af;
+  color: ${(props) => props.theme.textMuted};
 
   svg {
     margin-top: 0.25rem;
@@ -881,11 +909,11 @@ const FooterContactItem = styled.div`
 `;
 
 const FooterBottom = styled.div`
-  border-top: 1px solid rgba(55, 65, 81, 0.5);
+  border-top: 1px solid ${(props) => props.theme.footerBorder};
   margin-top: 2.5rem;
   padding-top: 1.5rem;
   text-align: center;
-  color: #6b7280;
+  color: ${(props) => props.theme.textMuted};
 `;
 
 // Data
@@ -899,7 +927,6 @@ const skills = [
   { name: "Redux", level: 75 },
   { name: "Node.js", level: 70 },
   { name: "Git", level: 85 },
-
   { name: "Framer Motion", level: 80 },
   { name: "RESTful APIs", level: 85 },
 ];
@@ -911,16 +938,16 @@ const experiences = [
     location: "Pune",
     period: "Feb 2024 – July 2024",
     description:
-      "Assisted in developing and optimizing ERP modules like Sales, Inventory, and Admin Panel using the MERN stack.Built scalable features for sales tracking and billing systems with a focus on performance and responsiveness.Translated Figma designs into reusable UI components and integrated RESTful APIs for smooth data flow.Collaborated in Agile sprints, conducted testing, and provided support for issue resolution and deployment.",
+      "As a Web Developer at IAFD Solutions Pvt Ltd, I worked on a custom CRM Portal built for a large-scale FMCG enterprise, supporting over 600 salespersons and more than 110,000 retailers across Central India. I was responsible for developing and maintaining responsive, scalable user interfaces using React, TypeScript, Tailwind CSS, React Hook Form, Redux Toolkit, and ShadCN UI, ensuring a consistent and smooth user experience across devices. The CRM included key features such as lead tracking, user management, analytics dashboards, and role-based access. I also contributed to building a custom CMS for managing dynamic content across various modules, helping streamline content workflows and improve user autonomy. On the backend, I designed and integrated RESTful APIs and microservices to facilitate modular and scalable system communication. Additionally, I created reusable UI components and dynamic form logic to speed up development while maintaining design consistency. Working within Agile sprints, I collaborated with cross-functional teams to gather requirements, deliver features, and resolve issues effectively. I also demonstrated strong debugging skills, identifying and fixing issues in both development and production environments to ensure application stability. For data storage and retrieval, I utilized MongoDB, focusing on performance, integrity, and scalability.",
   },
-  {
-    title: "Software Developer Developer",
-    company: "Actify",
-    location: "Thane ",
-    period: "Apr 2025 - Present",
-    description:
-      "Developed and maintained client websites using React.js and TailwindCSS. Integrated RESTful APIs and implemented responsive designs. Participated in code reviews.",
-  },
+  // {
+  //   title: "Software Developer Developer",
+  //   company: "Actify",
+  //   location: "Thane ",
+  //   period: "Apr 2025 - Present",
+  //   description:
+  //     "Developed and maintained client websites using React.js and TailwindCSS. Integrated RESTful APIs and implemented responsive designs. Participated in code reviews.",
+  // },
 ];
 
 const projects = [
@@ -928,7 +955,7 @@ const projects = [
     title: "Shrimad Ramchandra Landing Page",
     description:
       "Developed a fully responsive Shrimad Rajchandra Landing Page using Tailwind CSS and Framer Motion, showcasing clean UI, smooth animations, and mobile-first design.Focused on semantic structure, accessibility, and performance for a polished user experience.",
-    image: "public/ashram.jpeg",
+    image: "/ashram.jpeg",
     tags: ["Next.js", "Tailwind CSS", "Framer Motion"],
     liveLink: "https://shrimadrarajchandra.netlify.app/",
     githubLink:
@@ -938,7 +965,7 @@ const projects = [
     title: "Money Farmz ",
     description:
       "Built Money Farmz, a fully responsive web app with deeply nested data rendered across three pages using React Router.Focused on clean UI, efficient data rendering, and mobile-friendly design with Tailwind CSS.",
-    image: "public/moneFarmz.jpeg",
+    image: "/moneFarmz.jpeg",
     tags: ["React.js", "Tailwind CSS"],
     liveLink: "https://money-farmz.vercel.app/",
     githubLink: "#",
@@ -947,7 +974,7 @@ const projects = [
     title: "MovieFlix",
     description:
       "Developed MovieFlix, a fully responsive movie app using the TMDB API with real-time search, cast details, and multi-page navigation.Styled with Tailwind CSS for a clean UI and seamless user experience across devices.",
-    image: "public/movieFlix.jpeg",
+    image: "/movieFlix.jpeg",
     tags: ["React.js", "React Router Dom", "Tailwind CSS"],
     liveLink: "https://movieflix-delta-gray.vercel.app/",
     githubLink: "https://github.com/harsh-bhoir-01/movieflix.git",
@@ -960,24 +987,18 @@ const education = [
     institution: "Surana College",
     location: "Bangalore",
     period: "2020 - 2023",
-    // description:
-    //   "Specialized in Web Development and User Interface Design. Completed thesis on Responsive Web Design Patterns.",
   },
   {
     degree: "HSC - (Science)",
     institution: "BNN College",
     location: "Bhiwandi",
     period: "2018 - 2020",
-    // description:
-    //   "Focused on Software Engineering and Web Technologies. Participated in various hackathons and coding competitions.",
   },
   {
     degree: "SSC",
     institution: "The Scholar's English High School",
     location: "Bhiwandi",
     period: "2017 - 2018",
-    // description:
-    //   "Intensive 12-week program covering full-stack web development with JavaScript, React, and Node.js.",
   },
 ];
 
@@ -1022,7 +1043,7 @@ const Typewriter: React.FC<{
 
   return (
     <TypewriterContainer>
-      <TypewriterText>I'm a </TypewriterText>
+      <TypewriterText>I'm a&nbsp; </TypewriterText>
       <TypewriterHighlight>{currentText}</TypewriterHighlight>
       <TypewriterCursor>|</TypewriterCursor>
     </TypewriterContainer>
@@ -1062,6 +1083,46 @@ const CloseIcon: React.FC = () => (
   >
     <line x1="18" y1="6" x2="6" y2="18"></line>
     <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>
+);
+
+const SunIcon: React.FC = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="5"></circle>
+    <line x1="12" y1="1" x2="12" y2="3"></line>
+    <line x1="12" y1="21" x2="12" y2="23"></line>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+    <line x1="1" y1="12" x2="3" y2="12"></line>
+    <line x1="21" y1="12" x2="23" y2="12"></line>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+  </svg>
+);
+
+const MoonIcon: React.FC = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
   </svg>
 );
 
@@ -1153,23 +1214,6 @@ const ExternalLinkIcon: React.FC = () => (
   </svg>
 );
 
-const GraduationCapIcon: React.FC = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-    <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path>
-  </svg>
-);
-
 const MailIcon: React.FC = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -1223,6 +1267,7 @@ const ChevronDownIcon: React.FC = () => (
 const App: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDark, setIsDark] = useState(true);
 
   const homeRef = useRef<HTMLElement>(null);
   const aboutRef = useRef<HTMLElement>(null);
@@ -1230,6 +1275,10 @@ const App: React.FC = () => {
   const experienceRef = useRef<HTMLElement>(null);
   const projectsRef = useRef<HTMLElement>(null);
   const educationRef = useRef<HTMLElement>(null);
+
+  const toggleTheme = () => {
+    setIsDark(!isDark);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -1257,557 +1306,580 @@ const App: React.FC = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  const currentTheme = isDark ? darkTheme : lightTheme;
+
   return (
-    <AppContainer>
-      <GlobalStyle />
+    <ThemeProvider theme={currentTheme}>
+      <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+        <AppContainer>
+          <GlobalStyle theme={currentTheme} />
 
-      {/* Navbar */}
-      <NavbarContainer isScrolled={isScrolled}>
-        <NavbarContent>
-          <Logo>Portfolio</Logo>
+          {/* Navbar */}
+          <NavbarContainer isScrolled={isScrolled}>
+            <NavbarContent>
+              <Logo>Portfolio</Logo>
 
-          {/* Desktop Navigation */}
-          <NavLinks>
-            <NavCapsule>
-              <NavLink onClick={() => scrollToSection(homeRef)}>Home</NavLink>
-              <NavLink onClick={() => scrollToSection(aboutRef)}>About</NavLink>
-              <NavLink onClick={() => scrollToSection(skillsRef)}>
-                Skills
-              </NavLink>
-              <NavLink onClick={() => scrollToSection(experienceRef)}>
-                Experience
-              </NavLink>
-              <NavLink onClick={() => scrollToSection(projectsRef)}>
-                Projects
-              </NavLink>
-              <NavLink onClick={() => scrollToSection(educationRef)}>
-                Education
-              </NavLink>
-            </NavCapsule>
+              {/* Desktop Navigation */}
+              <NavLinks>
+                <NavCapsule>
+                  <NavLink onClick={() => scrollToSection(homeRef)}>
+                    Home
+                  </NavLink>
+                  <NavLink onClick={() => scrollToSection(aboutRef)}>
+                    About
+                  </NavLink>
+                  <NavLink onClick={() => scrollToSection(skillsRef)}>
+                    Skills
+                  </NavLink>
+                  <NavLink onClick={() => scrollToSection(experienceRef)}>
+                    Experience
+                  </NavLink>
+                  <NavLink onClick={() => scrollToSection(projectsRef)}>
+                    Projects
+                  </NavLink>
+                  <NavLink onClick={() => scrollToSection(educationRef)}>
+                    Education
+                  </NavLink>
+                </NavCapsule>
 
-            <SocialLinks>
-              <SocialLink
-                href="https://github.com/harsh-bhoir-01"
-                target="_blank"
-                rel="noopener noreferrer"
+                <ThemeToggle onClick={toggleTheme}>
+                  {isDark ? <SunIcon /> : <MoonIcon />}
+                </ThemeToggle>
+
+                <SocialLinks>
+                  <SocialLink
+                    href="https://github.com/harsh-bhoir-01"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <GithubIcon />
+                  </SocialLink>
+                  <SocialLink
+                    href="https://linkedin.com/in/harsh-bhoir-268536249"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <LinkedinIcon />
+                  </SocialLink>
+                </SocialLinks>
+              </NavLinks>
+
+              {/* Mobile Menu Button */}
+              <MobileMenuButton onClick={toggleMenu}>
+                {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
+              </MobileMenuButton>
+            </NavbarContent>
+          </NavbarContainer>
+
+          {/* Mobile Navigation */}
+          <AnimatePresence>
+            {isMenuOpen && (
+              <MobileMenu
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
               >
-                <GithubIcon />
-              </SocialLink>
-              <SocialLink
-                href="https://linkedin.com/in/harsh-bhoir-268536249"
-                target="_blank"
-                rel="noopener noreferrer"
+                <MobileNavLink onClick={() => scrollToSection(homeRef)}>
+                  Home
+                </MobileNavLink>
+                <MobileNavLink onClick={() => scrollToSection(aboutRef)}>
+                  About
+                </MobileNavLink>
+                <MobileNavLink onClick={() => scrollToSection(skillsRef)}>
+                  Skills
+                </MobileNavLink>
+                <MobileNavLink onClick={() => scrollToSection(experienceRef)}>
+                  Experience
+                </MobileNavLink>
+                <MobileNavLink onClick={() => scrollToSection(projectsRef)}>
+                  Projects
+                </MobileNavLink>
+                <MobileNavLink onClick={() => scrollToSection(educationRef)}>
+                  Education
+                </MobileNavLink>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "1rem",
+                    padding: "0.5rem 1rem",
+                    marginTop: "0.5rem",
+                  }}
+                >
+                  <ThemeToggle onClick={toggleTheme}>
+                    {isDark ? <SunIcon /> : <MoonIcon />}
+                  </ThemeToggle>
+
+                  <MobileSocialLinks>
+                    <SocialLink
+                      href="https://github.com/harsh-bhoir-01"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <GithubIcon />
+                    </SocialLink>
+                    <SocialLink
+                      href="https://linkedin.com/in/harsh-bhoir-268536249"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <LinkedinIcon />
+                    </SocialLink>
+                  </MobileSocialLinks>
+                </div>
+              </MobileMenu>
+            )}
+          </AnimatePresence>
+
+          {/* Hero Section */}
+          <HeroSection ref={homeRef}>
+            <HeroContent>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
               >
-                <LinkedinIcon />
-              </SocialLink>
-            </SocialLinks>
-          </NavLinks>
+                <HeroSubtitle>Hello, I'm</HeroSubtitle>
+              </motion.div>
 
-          {/* Mobile Menu Button */}
-          <MobileMenuButton onClick={toggleMenu}>
-            {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
-          </MobileMenuButton>
-        </NavbarContent>
-      </NavbarContainer>
-
-      {/* Mobile Navigation */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <MobileMenu
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <MobileNavLink onClick={() => scrollToSection(homeRef)}>
-              Home
-            </MobileNavLink>
-            <MobileNavLink onClick={() => scrollToSection(aboutRef)}>
-              About
-            </MobileNavLink>
-            <MobileNavLink onClick={() => scrollToSection(skillsRef)}>
-              Skills
-            </MobileNavLink>
-            <MobileNavLink onClick={() => scrollToSection(experienceRef)}>
-              Experience
-            </MobileNavLink>
-            <MobileNavLink onClick={() => scrollToSection(projectsRef)}>
-              Projects
-            </MobileNavLink>
-            <MobileNavLink onClick={() => scrollToSection(educationRef)}>
-              Education
-            </MobileNavLink>
-
-            <MobileSocialLinks>
-              <SocialLink
-                href="https://github.com/harsh-bhoir-01"
-                target="_blank"
-                rel="noopener noreferrer"
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <GithubIcon />
-              </SocialLink>
-              <SocialLink
-                href="https://linkedin.com/in/harsh-bhoir-268536249"
-                target="_blank"
-                rel="noopener noreferrer"
+                <HeroTitle>Harsh Bhoir</HeroTitle>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
               >
-                <LinkedinIcon />
-              </SocialLink>
-            </MobileSocialLinks>
-          </MobileMenu>
-        )}
-      </AnimatePresence>
+                <Typewriter
+                  texts={[
+                    " Frontend Developer",
+                    " React Specialist",
+                    " Problem Solver",
+                  ]}
+                />
+              </motion.div>
 
-      {/* Hero Section */}
-      <HeroSection ref={homeRef}>
-        <HeroContent>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <HeroSubtitle>Hello, I'm</HeroSubtitle>
-          </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+              >
+                <HeroButton onClick={() => scrollToSection(aboutRef)}>
+                  Get In Touch
+                </HeroButton>
+              </motion.div>
+            </HeroContent>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <HeroTitle>Harsh Bhoir</HeroTitle>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <Typewriter
-              texts={[
-                " Frontend Developer",
-                " React Specialist",
-                " Problem Solver",
-              ]}
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-          >
-            <HeroButton onClick={() => scrollToSection(aboutRef)}>
-              Get In Touch
-            </HeroButton>
-          </motion.div>
-        </HeroContent>
-
-        <ScrollIndicator
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1 }}
-          whileHover={{ y: 5 }}
-          onClick={() => scrollToSection(aboutRef)}
-        >
-          <motion.div
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
-          >
-            <ChevronDownIcon />
-          </motion.div>
-        </ScrollIndicator>
-      </HeroSection>
-
-      {/* About Section */}
-      <AboutSection ref={aboutRef}>
-        <SectionContainer>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <SectionTitle>About Me</SectionTitle>
-          </motion.div>
-
-          <AboutGrid>
-            {/* <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              viewport={{ once: true }}
+            <ScrollIndicator
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1, delay: 1 }}
+              whileHover={{ y: 5 }}
+              onClick={() => scrollToSection(aboutRef)}
             >
-              <AboutImageContainer>
-                <AboutImage>
-                  <img src="https://via.placeholder.com/400" alt="Profile" />
-                </AboutImage>
-              </AboutImageContainer>
-            </motion.div> */}
+              <motion.div
+                animate={{ y: [0, 10, 0] }}
+                transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
+              >
+                <ChevronDownIcon />
+              </motion.div>
+            </ScrollIndicator>
+          </HeroSection>
 
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              viewport={{ once: true }}
-            >
-              <AboutContent>
-                <AboutHeading>Who am I?</AboutHeading>
-                <AboutText>
-                  I’m a Frontend Developer with a passion for turning ideas into
-                  interactive, user-friendly web experiences. Coming from a BBA
-                  background, I bring a unique blend of creativity, structure,
-                  and problem-solving to my work. I specialize in building
-                  responsive, scalable UIs using React.js, Tailwind CSS, and
-                  Framer Motion, and I’m experienced in integrating real-time
-                  APIs and managing state with Redux Toolkit.
-                </AboutText>
-                <AboutText>
-                  From dynamic apps like MovieFlix and Money Farmz to elegant
-                  landing pages like Shrimad Rajchandra, I enjoy building
-                  projects that are both functional and visually refined. I
-                  believe great user experiences are built with attention to
-                  detail, performance, and responsiveness across devices.
-                </AboutText>
-
-                <AboutInfoGrid>
-                  <AboutInfoItem>
-                    <AboutInfoLabel>Name:</AboutInfoLabel>
-                    <AboutInfoValue>Harsh Bhoir</AboutInfoValue>
-                  </AboutInfoItem>
-                  <AboutInfoItem>
-                    <AboutInfoLabel>Email:</AboutInfoLabel>
-                    <AboutInfoValue>harshbhoir1302@gmail.com</AboutInfoValue>
-                  </AboutInfoItem>
-                  <AboutInfoItem>
-                    <AboutInfoLabel>Location:</AboutInfoLabel>
-                    <AboutInfoValue>Mumbai, India</AboutInfoValue>
-                  </AboutInfoItem>
-                  <AboutInfoItem>
-                    <AboutInfoLabel>Availability:</AboutInfoLabel>
-                    <AboutInfoValue>Frontend Developer</AboutInfoValue>
-                  </AboutInfoItem>
-                </AboutInfoGrid>
-              </AboutContent>
-            </motion.div>
-          </AboutGrid>
-        </SectionContainer>
-      </AboutSection>
-
-      {/* Skills Section */}
-      <SkillsSection ref={skillsRef}>
-        <SectionContainer>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <SectionTitle>My Skills</SectionTitle>
-          </motion.div>
-
-          <SkillsGrid>
-            {skills.map((skill, index) => (
-              <SkillCard
-                key={index}
+          {/* About Section */}
+          <AboutSection ref={aboutRef}>
+            <SectionContainer>
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
+                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
               >
-                <SkillHeader>
-                  <SkillName>{skill.name}</SkillName>
-                  <SkillLevel>{skill.level}%</SkillLevel>
-                </SkillHeader>
-                <SkillBar>
-                  <SkillProgress
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${skill.level}%` }}
-                    transition={{ duration: 1, delay: 0.5 + index * 0.1 }}
+                <SectionTitle>About Me</SectionTitle>
+              </motion.div>
+
+              <AboutGrid>
+                <motion.div
+                  initial={{ opacity: 0, x: 50 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                  viewport={{ once: true }}
+                >
+                  <AboutContent>
+                    <AboutHeading>Who am I?</AboutHeading>
+                    <AboutText>
+                      I'm a Frontend Developer with a passion for turning ideas
+                      into interactive, user-friendly web experiences. Coming
+                      from a BBA background, I bring a unique blend of
+                      creativity, structure, and problem-solving to my work. I
+                      specialize in building responsive, scalable UIs using
+                      React.js, Tailwind CSS, and Framer Motion, and I'm
+                      experienced in integrating real-time APIs and managing
+                      state with Redux Toolkit.
+                    </AboutText>
+                    <AboutText>
+                      From dynamic apps like MovieFlix and Money Farmz to
+                      elegant landing pages like Shrimad Rajchandra, I enjoy
+                      building projects that are both functional and visually
+                      refined. I believe great user experiences are built with
+                      attention to detail, performance, and responsiveness
+                      across devices.
+                    </AboutText>
+
+                    <AboutInfoGrid>
+                      <AboutInfoItem>
+                        <AboutInfoLabel>Name:</AboutInfoLabel>
+                        <AboutInfoValue>Harsh Bhoir</AboutInfoValue>
+                      </AboutInfoItem>
+                      <AboutInfoItem>
+                        <AboutInfoLabel>Email:</AboutInfoLabel>
+                        <AboutInfoValue>
+                          harshbhoir1302@gmail.com
+                        </AboutInfoValue>
+                      </AboutInfoItem>
+                      <AboutInfoItem>
+                        <AboutInfoLabel>Location:</AboutInfoLabel>
+                        <AboutInfoValue>Mumbai, India</AboutInfoValue>
+                      </AboutInfoItem>
+                      <AboutInfoItem>
+                        <AboutInfoLabel>Availability:</AboutInfoLabel>
+                        <AboutInfoValue>Frontend Developer</AboutInfoValue>
+                      </AboutInfoItem>
+                    </AboutInfoGrid>
+                  </AboutContent>
+                </motion.div>
+              </AboutGrid>
+            </SectionContainer>
+          </AboutSection>
+
+          {/* Skills Section */}
+          <SkillsSection ref={skillsRef}>
+            <SectionContainer>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+              >
+                <SectionTitle>My Skills</SectionTitle>
+              </motion.div>
+
+              <SkillsGrid>
+                {skills.map((skill, index) => (
+                  <SkillCard
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
                     viewport={{ once: true }}
-                  />
-                </SkillBar>
-              </SkillCard>
-            ))}
-          </SkillsGrid>
-        </SectionContainer>
-      </SkillsSection>
+                  >
+                    <SkillHeader>
+                      <SkillName>{skill.name}</SkillName>
+                      <SkillLevel>{skill.level}%</SkillLevel>
+                    </SkillHeader>
+                    <SkillBar>
+                      <SkillProgress
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${skill.level}%` }}
+                        transition={{ duration: 1, delay: 0.5 + index * 0.1 }}
+                        viewport={{ once: true }}
+                      />
+                    </SkillBar>
+                  </SkillCard>
+                ))}
+              </SkillsGrid>
+            </SectionContainer>
+          </SkillsSection>
 
-      {/* Experience Section */}
-      <ExperienceSection ref={experienceRef}>
-        <SectionContainer>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <SectionTitle>Work Experience</SectionTitle>
-          </motion.div>
-
-          <Timeline>
-            {experiences.map((exp, index) => (
-              <TimelineItem
-                key={index}
-                isEven={index % 2 === 0}
-                initial={{ opacity: 0, y: 50 }}
+          {/* Experience Section */}
+          <ExperienceSection ref={experienceRef}>
+            <SectionContainer>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.2 }}
+                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
               >
-                <TimelineDot />
-                <TimelineContent isEven={index % 2 === 0}>
-                  <TimelineTitle>{exp.title}</TimelineTitle>
-                  <TimelineCompany>{exp.company}</TimelineCompany>
+                <SectionTitle>Work Experience</SectionTitle>
+              </motion.div>
 
-                  <TimelineMeta>
-                    <TimelineMetaItem>
-                      <CalendarIcon />
-                      <span>{exp.period}</span>
-                    </TimelineMetaItem>
-                    <TimelineMetaItem>
-                      <MapPinIcon />
-                      <span>{exp.location}</span>
-                    </TimelineMetaItem>
-                  </TimelineMeta>
+              <Timeline>
+                {experiences.map((exp, index) => (
+                  <TimelineItem
+                    key={index}
+                    isEven={index % 2 === 0}
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.2 }}
+                    viewport={{ once: true }}
+                  >
+                    <TimelineDot />
+                    <TimelineContent isEven={index % 2 === 0}>
+                      <TimelineTitle>{exp.title}</TimelineTitle>
+                      <TimelineCompany>{exp.company}</TimelineCompany>
 
-                  <TimelineDescription>{exp.description}</TimelineDescription>
-                </TimelineContent>
-              </TimelineItem>
-            ))}
-          </Timeline>
-        </SectionContainer>
-      </ExperienceSection>
+                      <TimelineMeta>
+                        <TimelineMetaItem>
+                          <CalendarIcon />
+                          <span>{exp.period}</span>
+                        </TimelineMetaItem>
+                        <TimelineMetaItem>
+                          <MapPinIcon />
+                          <span>{exp.location}</span>
+                        </TimelineMetaItem>
+                      </TimelineMeta>
 
-      {/* Projects Section */}
-      <ProjectsSection ref={projectsRef}>
-        <SectionContainer>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <SectionTitle>My Projects</SectionTitle>
-          </motion.div>
+                      <TimelineDescription>
+                        {exp.description}
+                      </TimelineDescription>
+                    </TimelineContent>
+                  </TimelineItem>
+                ))}
+              </Timeline>
+            </SectionContainer>
+          </ExperienceSection>
 
-          <ProjectsGrid>
-            {projects.map((project, index) => (
-              <ProjectCard
-                key={index}
-                initial={{ opacity: 0, y: 50 }}
+          {/* Projects Section */}
+          <ProjectsSection ref={projectsRef}>
+            <SectionContainer>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
               >
-                <ProjectImageContainer>
-                  <ProjectImage src={project.image} alt={project.title} />
-                  <ProjectOverlay>
-                    <ProjectLinks>
-                      <ProjectLink
-                        href={project.githubLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                <SectionTitle>My Projects</SectionTitle>
+              </motion.div>
+
+              <ProjectsGrid>
+                {projects.map((project, index) => (
+                  <ProjectCard
+                    key={index}
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <ProjectImageContainer>
+                      <ProjectImage src={project.image} alt={project.title} />
+                      <ProjectOverlay>
+                        <ProjectLinks>
+                          <ProjectLink
+                            href={project.githubLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <GithubIcon />
+                          </ProjectLink>
+                          <ProjectLink
+                            href={project.liveLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLinkIcon />
+                          </ProjectLink>
+                        </ProjectLinks>
+                      </ProjectOverlay>
+                    </ProjectImageContainer>
+
+                    <ProjectContent>
+                      <ProjectTitle>{project.title}</ProjectTitle>
+                      <ProjectDescription>
+                        {project.description}
+                      </ProjectDescription>
+                      <ProjectTags>
+                        {project.tags.map((tag, tagIndex) => (
+                          <ProjectTag key={tagIndex}>{tag}</ProjectTag>
+                        ))}
+                      </ProjectTags>
+                    </ProjectContent>
+                  </ProjectCard>
+                ))}
+              </ProjectsGrid>
+            </SectionContainer>
+          </ProjectsSection>
+
+          {/* Education Section */}
+          <EducationSection ref={educationRef}>
+            <SectionContainer>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+              >
+                <SectionTitle>Education</SectionTitle>
+              </motion.div>
+
+              <EducationTimeline>
+                {education.map((edu, index) => (
+                  <EducationItem
+                    key={index}
+                    initial={{ opacity: 0, y: 50 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.2 }}
+                    viewport={{ once: true }}
+                  >
+                    <EducationContent>
+                      <EducationDegree>{edu.degree}</EducationDegree>
+                      <EducationInstitution>
+                        {edu.institution}
+                      </EducationInstitution>
+
+                      <EducationMeta>
+                        <EducationMetaItem>
+                          <CalendarIcon />
+                          <span>{edu.period}</span>
+                        </EducationMetaItem>
+                        <EducationMetaItem>
+                          <MapPinIcon />
+                          <span>{edu.location}</span>
+                        </EducationMetaItem>
+                      </EducationMeta>
+                    </EducationContent>
+                  </EducationItem>
+                ))}
+              </EducationTimeline>
+            </SectionContainer>
+          </EducationSection>
+
+          {/* Footer */}
+          <Footer>
+            <FooterContainer>
+              <FooterGrid>
+                <FooterColumn>
+                  <FooterLogo>Harsh Bhoir</FooterLogo>
+                  <FooterText>
+                    A passionate frontend developer specializing in creating
+                    responsive and user-friendly web applications.
+                  </FooterText>
+                  <FooterSocialLinks>
+                    <SocialLink
+                      href="https://github.com/harsh-bhoir-01"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <GithubIcon />
+                    </SocialLink>
+                    <SocialLink
+                      href="https://linkedin.com/in/harsh-bhoir-268536249"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <LinkedinIcon />
+                    </SocialLink>
+                    <SocialLink href="harshbhoir1302@gmail.com">
+                      <MailIcon />
+                    </SocialLink>
+                  </FooterSocialLinks>
+                </FooterColumn>
+
+                <FooterColumn>
+                  <FooterTitle>Quick Links</FooterTitle>
+                  <FooterLinks>
+                    <FooterLink>
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scrollToSection(homeRef);
+                        }}
                       >
-                        <GithubIcon />
-                      </ProjectLink>
-                      <ProjectLink
-                        href={project.liveLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        Home
+                      </a>
+                    </FooterLink>
+                    <FooterLink>
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scrollToSection(aboutRef);
+                        }}
                       >
-                        <ExternalLinkIcon />
-                      </ProjectLink>
-                    </ProjectLinks>
-                  </ProjectOverlay>
-                </ProjectImageContainer>
+                        About
+                      </a>
+                    </FooterLink>
+                    <FooterLink>
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scrollToSection(skillsRef);
+                        }}
+                      >
+                        Skills
+                      </a>
+                    </FooterLink>
+                    <FooterLink>
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scrollToSection(experienceRef);
+                        }}
+                      >
+                        Experience
+                      </a>
+                    </FooterLink>
+                    <FooterLink>
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scrollToSection(projectsRef);
+                        }}
+                      >
+                        Projects
+                      </a>
+                    </FooterLink>
+                    <FooterLink>
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scrollToSection(educationRef);
+                        }}
+                      >
+                        Education
+                      </a>
+                    </FooterLink>
+                  </FooterLinks>
+                </FooterColumn>
 
-                <ProjectContent>
-                  <ProjectTitle>{project.title}</ProjectTitle>
-                  <ProjectDescription>{project.description}</ProjectDescription>
-                  <ProjectTags>
-                    {project.tags.map((tag, tagIndex) => (
-                      <ProjectTag key={tagIndex}>{tag}</ProjectTag>
-                    ))}
-                  </ProjectTags>
-                </ProjectContent>
-              </ProjectCard>
-            ))}
-          </ProjectsGrid>
-        </SectionContainer>
-      </ProjectsSection>
+                <FooterColumn>
+                  <FooterTitle>Contact Info</FooterTitle>
+                  <FooterContactItem>
+                    <MapPinIcon />
+                    <span>Mumbai, India</span>
+                  </FooterContactItem>
+                  <FooterContactItem>
+                    <PhoneIcon />
+                    <span>+91 8605691860</span>
+                  </FooterContactItem>
+                  <FooterContactItem>
+                    <MailIcon />
+                    <span>harshbhoir1302@gmail.com</span>
+                  </FooterContactItem>
+                </FooterColumn>
+              </FooterGrid>
 
-      {/* Education Section */}
-      <EducationSection ref={educationRef}>
-        <SectionContainer>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-          >
-            <SectionTitle>Education</SectionTitle>
-          </motion.div>
-
-          <EducationTimeline>
-            {education.map((edu, index) => (
-              <EducationItem
-                key={index}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.2 }}
-                viewport={{ once: true }}
-              >
-                <EducationContent>
-                  <EducationDegree>{edu.degree}</EducationDegree>
-                  <EducationInstitution>{edu.institution}</EducationInstitution>
-
-                  <EducationMeta>
-                    <EducationMetaItem>
-                      <CalendarIcon />
-                      <span>{edu.period}</span>
-                    </EducationMetaItem>
-                    <EducationMetaItem>
-                      <MapPinIcon />
-                      <span>{edu.location}</span>
-                    </EducationMetaItem>
-                  </EducationMeta>
-
-                  <EducationDescription>{edu.description}</EducationDescription>
-                </EducationContent>
-              </EducationItem>
-            ))}
-          </EducationTimeline>
-        </SectionContainer>
-      </EducationSection>
-
-      {/* Footer */}
-      <Footer>
-        <FooterContainer>
-          <FooterGrid>
-            <FooterColumn>
-              <FooterLogo>Your Name</FooterLogo>
-              <FooterText>
-                A passionate frontend developer specializing in creating
-                responsive and user-friendly web applications.
-              </FooterText>
-              <FooterSocialLinks>
-                <SocialLink
-                  href="https://github.com/harsh-bhoir-01"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <GithubIcon />
-                </SocialLink>
-                <SocialLink
-                  href="https://linkedin.com/in/harsh-bhoir-268536249"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <LinkedinIcon />
-                </SocialLink>
-                <SocialLink href="harshbhoir1302@gmail.com">
-                  <MailIcon />
-                </SocialLink>
-              </FooterSocialLinks>
-            </FooterColumn>
-
-            <FooterColumn>
-              <FooterTitle>Quick Links</FooterTitle>
-              <FooterLinks>
-                <FooterLink>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      scrollToSection(homeRef);
-                    }}
-                  >
-                    Home
-                  </a>
-                </FooterLink>
-                <FooterLink>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      scrollToSection(aboutRef);
-                    }}
-                  >
-                    About
-                  </a>
-                </FooterLink>
-                <FooterLink>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      scrollToSection(skillsRef);
-                    }}
-                  >
-                    Skills
-                  </a>
-                </FooterLink>
-                <FooterLink>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      scrollToSection(experienceRef);
-                    }}
-                  >
-                    Experience
-                  </a>
-                </FooterLink>
-                <FooterLink>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      scrollToSection(projectsRef);
-                    }}
-                  >
-                    Projects
-                  </a>
-                </FooterLink>
-                <FooterLink>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      scrollToSection(educationRef);
-                    }}
-                  >
-                    Education
-                  </a>
-                </FooterLink>
-              </FooterLinks>
-            </FooterColumn>
-
-            <FooterColumn>
-              <FooterTitle>Contact Info</FooterTitle>
-              <FooterContactItem>
-                <MapPinIcon />
-                <span>Mumbai, India</span>
-              </FooterContactItem>
-              <FooterContactItem>
-                <PhoneIcon />
-                <span>+91 8605691860</span>
-              </FooterContactItem>
-              <FooterContactItem>
-                <MailIcon />
-                <span>harshbhoir1302@gmail.com</span>
-              </FooterContactItem>
-            </FooterColumn>
-          </FooterGrid>
-
-          <FooterBottom>
-            <p>
-              © {new Date().getFullYear()} Harsh Bhoir. All rights reserved.
-            </p>
-          </FooterBottom>
-        </FooterContainer>
-      </Footer>
-    </AppContainer>
+              <FooterBottom>
+                <p>
+                  © {new Date().getFullYear()} Harsh Bhoir. All rights reserved.
+                </p>
+              </FooterBottom>
+            </FooterContainer>
+          </Footer>
+        </AppContainer>
+      </ThemeContext.Provider>
+    </ThemeProvider>
   );
 };
 
