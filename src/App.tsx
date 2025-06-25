@@ -9,6 +9,27 @@ import styled, {
   ThemeProvider,
 } from "styled-components";
 
+// Theme type definition
+interface Theme {
+  background: string;
+  cardBackground: string;
+  cardBorder: string;
+  cardHoverBorder: string;
+  text: string;
+  textSecondary: string;
+  textMuted: string;
+  navBackground: string;
+  navBackgroundTransparent: string;
+  skillBarBackground: string;
+  footerBackground: string;
+  footerBorder: string;
+}
+
+// Extend styled-components DefaultTheme
+declare module "styled-components" {
+  export interface DefaultTheme extends Theme {}
+}
+
 // Theme Context
 const ThemeContext = createContext<{
   isDark: boolean;
@@ -19,7 +40,7 @@ const ThemeContext = createContext<{
 });
 
 // Theme definitions
-const darkTheme = {
+const darkTheme: Theme = {
   background: "linear-gradient(to bottom right, #111827, #1f2937, #111827)",
   cardBackground: "rgba(31, 41, 55, 0.5)",
   cardBorder: "rgba(55, 65, 81, 0.5)",
@@ -34,7 +55,7 @@ const darkTheme = {
   footerBorder: "rgba(55, 65, 81, 0.5)",
 };
 
-const lightTheme = {
+const lightTheme: Theme = {
   background: "linear-gradient(to bottom right, #fef3c7, #dddd, #dddd)",
   cardBackground: "rgba(255, 255, 255, 0.8)",
   cardBorder: "rgba(229, 231, 235, 0.8)",
@@ -50,7 +71,7 @@ const lightTheme = {
 };
 
 // Global Styles
-const GlobalStyle = createGlobalStyle<{ theme: any }>`
+const GlobalStyle = createGlobalStyle`
   * {
     margin: 0;
     padding: 0;
@@ -940,14 +961,6 @@ const experiences = [
     description:
       "As a Web Developer at IAFD Solutions Pvt Ltd, I worked on a custom CRM Portal built for a large-scale FMCG enterprise, supporting over 600 salespersons and more than 110,000 retailers across Central India. I was responsible for developing and maintaining responsive, scalable user interfaces using React, TypeScript, Tailwind CSS, React Hook Form, Redux Toolkit, and ShadCN UI, ensuring a consistent and smooth user experience across devices. The CRM included key features such as lead tracking, user management, analytics dashboards, and role-based access. I also contributed to building a custom CMS for managing dynamic content across various modules, helping streamline content workflows and improve user autonomy. On the backend, I designed and integrated RESTful APIs and microservices to facilitate modular and scalable system communication. Additionally, I created reusable UI components and dynamic form logic to speed up development while maintaining design consistency. Working within Agile sprints, I collaborated with cross-functional teams to gather requirements, deliver features, and resolve issues effectively. I also demonstrated strong debugging skills, identifying and fixing issues in both development and production environments to ensure application stability. For data storage and retrieval, I utilized MongoDB, focusing on performance, integrity, and scalability.",
   },
-  // {
-  //   title: "Software Developer Developer",
-  //   company: "Actify",
-  //   location: "Thane ",
-  //   period: "Apr 2025 - Present",
-  //   description:
-  //     "Developed and maintained client websites using React.js and TailwindCSS. Integrated RESTful APIs and implemented responsive designs. Participated in code reviews.",
-  // },
 ];
 
 const projects = [
@@ -1269,12 +1282,12 @@ const App: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(true);
 
-  const homeRef = useRef<HTMLElement>(null);
-  const aboutRef = useRef<HTMLElement>(null);
-  const skillsRef = useRef<HTMLElement>(null);
-  const experienceRef = useRef<HTMLElement>(null);
-  const projectsRef = useRef<HTMLElement>(null);
-  const educationRef = useRef<HTMLElement>(null);
+  const homeRef = useRef<HTMLElement | null>(null);
+  const aboutRef = useRef<HTMLElement | null>(null);
+  const skillsRef = useRef<HTMLElement | null>(null);
+  const experienceRef = useRef<HTMLElement | null>(null);
+  const projectsRef = useRef<HTMLElement | null>(null);
+  const educationRef = useRef<HTMLElement | null>(null);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -1295,7 +1308,7 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const scrollToSection = (ref: React.RefObject<HTMLElement>) => {
+  const scrollToSection = (ref: React.RefObject<HTMLElement | null>) => {
     if (ref.current) {
       ref.current.scrollIntoView({ behavior: "smooth" });
     }
@@ -1312,7 +1325,7 @@ const App: React.FC = () => {
     <ThemeProvider theme={currentTheme}>
       <ThemeContext.Provider value={{ isDark, toggleTheme }}>
         <AppContainer>
-          <GlobalStyle theme={currentTheme} />
+          <GlobalStyle />
 
           {/* Navbar */}
           <NavbarContainer isScrolled={isScrolled}>
